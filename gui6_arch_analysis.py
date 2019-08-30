@@ -18,7 +18,11 @@ import pandas as pd
 import abc
 
 class MPLFigure(QtCore.QObject, Figure):
+   
+    """Base class for reusable matplotlib figure. Inheriting from QObject 
+    enables us to use Qt's signals/slots and translation mechanisms
     
+    """ 
     def __init__(self):
         super(MPLFigure, self).__init__()
         
@@ -95,33 +99,75 @@ class AnalysisTab(QtWidgets.QWidget):
         
     def plot_data(self, data):
         self.fig1.plot_data(data) 
+
+class Datendiagramm(Figure):
+    def __init__(self, *args, **kwargs):
+        super(Datendiagramm, self).__init__(*args, **kwargs)
+        self.canvas = QtCanvas(self)
         
+        self.ax = self.add_subplot(111)
+        self.ax.grid()
+        self.ax.set_xlabel('Frame #')
+        self.ax.set_ylabel('Pupil Position [px]')
+        
+        self.refresh_counter = 0
+        self.refresh_rate = 10
+        self.lines = None
+        
+    def init(self, width, height, length):
+        self.ax.cla()
+        self.ax.grid()
+        self.ax.set_xlabel('Frame #')
+        self.ax.set_ylabel('Pupil Position [px]')
+        self.ax.set_title('Pupil Center')
+        
+        self.ax.set_xlim([0, length])
+        self.ax.set_ylim([0, np.maximum(width, height)])
+        self.lines = self.ax.plot(np.full((length, 2), np.nan), linewidth=1)
+        self.ax.legend(['Hor','Ver'])
+        self.canvas.draw()
+        
+    """ Update the plot data for given index but don't draw """
+    def set_pos(self, data):
+        self.lines[0].set_ydata(data[:,0])
+        self.lines[1].set_ydata(data[:,1])
+
+    """ Redraw the plot """
+    def refresh(self):
+        if self.refresh_counter==0:
+            if self.lines:
+                self.ax.draw_artist(self.lines[0])
+                self.ax.draw_artist(self.lines[1])
+                self.canvas.update()
+        self.refresh_counter = (self.refresh_counter+1)%self.refresh_rate
+            # self.canvas.flush_events()
+        
+# =============================================================================
+# 
 if __name__ == '__main__':
-    
-    class MainWindow(QtWidgets.QMainWindow): 
-        """
-        Klasse für Hauptfenster verschlanken und in main-Bereich verschieben 
-        Wird nur dann aufgerufen, wenn dieses Skript direkt aufgerufen wird, 
-        aber nicht wenn Skript als Modul importiert wird. 
-        Dieses Verfahren eignet sich gut zum isolierten Testen von Modulen. 
-        Dieses Modul enthält nur die Klassen für die Datendiagramme.
-        """
+
+    class MainWindow(QtWidgets.QMainWindow):
         def __init__(self, **kwargs):
-            super(MainWindow, self).__init__(**kwargs) 
-            self.init_ui() 
-        
-        def init_ui(self):
-            # Keine Tabs; AnalysisTab-Klasse wird direkt eingebunden 
-            self.analytab = AnalysisTab(parent=self)
-            self.setCentralWidget(self.analytab) 
+            super(MainWindow, self).__init__(**kwargs)
             
-    app = QtCore.QCoreApplication.instance() 
+            self.tabs = QtWidgets.QTabWidget()
+            self.setCentralWidget(self.tabs)
+            
+                        # Datendiagramm erzeugen
+            self.plot_widget = Datendiagramm()
+            self.plot_widget.init(100,100,100)
+            self.tabs.addTab(self.plot_widget.canvas, self.tr('Diagramm'))
+            
+            self.analysis = AnalysisTab(parent=self)
+            self.tabs.addTab(self.analysis, self.tr('Analysis'))
+    
+    app = QtCore.QCoreApplication.instance()
     if app is None:
         app = QtWidgets.QApplication(sys.argv)
     app.references = set()
-    app.setStyle('Fusion')
     
     win = MainWindow()
+    win.setWindowTitle("Test Dataplot")
     app.references.add(win)
     win.show()
     win.raise_()

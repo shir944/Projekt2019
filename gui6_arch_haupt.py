@@ -10,7 +10,7 @@ import sys
 import traceback
 
 from gui6_arch_video import VideoTab
-from gui6_arch_analysis import AnalysisTab
+from gui6_arch_analysis import AnalysisTab, Datendiagramm
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, **kwargs):
@@ -23,8 +23,12 @@ class MainWindow(QtWidgets.QMainWindow):
     
         self.videotab = VideoTab(parent=self)
         self.analytab = AnalysisTab(parent=self)
+        self.diagrtab = Datendiagramm()
+        self.diagrtab.init(100,100,100)
+        
         
         self.tabs.addTab(self.videotab, self.tr('Video'))
+        self.tabs.addTab(self.diagrtab.canvas, self.tr('Diagramm'))
         self.tabs.addTab(self.analytab, self.tr('Analysis'))
         self.tabs.setTabEnabled(self.tabs.indexOf(self.videotab), True)
         self.tabs.setTabEnabled(self.tabs.indexOf(self.analytab), True)
@@ -59,6 +63,7 @@ if __name__ == '__main__':
     
     win = MainWindow()
     app.references.add(win)
+    win.setWindowTitle("Pupile Analyse")
     win.show()
     win.raise_()
     app.exec_()
