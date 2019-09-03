@@ -5,7 +5,7 @@ Created on Thu May 18 10:54:13 2017
 @author: eschneid
 """
 
-from PyQt5 import QtCore, QtGui, QtWidgets, QtWebEngineWidgets
+from PyQt5 import QtWebEngineWidgets, QtCore, QtGui, QtWidgets
 from OpenGL.GL import *
 
 import sys
